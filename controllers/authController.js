@@ -31,5 +31,17 @@ const signUp = (req, res) => {
 
   const query = `
     INSERT INTO USER (NAME, EMAIL, ROLE, PASSWORD)
+VALUES ('${name}', '${email}', '${role}', '${password}')
+  `;
 
-    
+  db.run(query, (err) => {
+    if (err) {
+      console.log(err.message);
+      if (err.message.includes('UNIQUE constraint')) {
+        return res.status(400).send('Email already exists.');
+      }
+      return res.status(500).send('Database error.');
+    }
+
+    return res.status(200).send('Registration successful');
+  });
