@@ -1,22 +1,4 @@
 const { db } = require('../db.js');
-// POST /signup
-const signup = (req, res) => {
-  const name = req.body.name;
-  const email = req.body.email;
-  const password = req.body.password;
-  const role = 'user'; // default to non-admin
-
-  if (!name || !email || !password) {
-    return res.status(400).send('Please provide name, email, and password');
-  }
-
-  const query = `
-    INSERT INTO user (NAME, EMAIL, ROLE, PASSWORD)
-    VALUES ('${name}', '${email}', '${role}', '${password}')
-  `;
-
-
-  const { db } = require('../db.js');
 
 // POST /signup
 const signUp = (req, res) => {
@@ -29,9 +11,14 @@ const signUp = (req, res) => {
     return res.status(400).send('Please provide name, email, and password');
   }
 
-  const query = `
+  bcrypt.hash(password, 10, (err, hashedPassword) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Error hashing password.');
+    }
+    const query = `
     INSERT INTO USER (NAME, EMAIL, ROLE, PASSWORD)
-VALUES ('${name}', '${email}', '${role}', '${password}')
+VALUES ('${name}', '${email}', '${role}', '${hashedPassword}')
   `;
 
   db.run(query, (err) => {
