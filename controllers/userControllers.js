@@ -33,12 +33,12 @@ const createUser = (req, res) => {
   
       // Insert
       const query = `
-        INSERT INTO USER (EMAIL, ROLE, PASSWORD)
-        VALUES ('${email}', '${role}', '${hashedPassword}')
-      `;
-  
-      db.run(query, (err) => {
-        if (err) {
+  INSERT INTO USER (EMAIL, ROLE, PASSWORD)
+  VALUES (?, ?, ?)
+`;
+
+db.run(query, [email, role, hashedPassword], function (err) {
+
           // Handle unique constraint violation
           if (err.message.includes('UNIQUE constraint')) {
             return res.status(400).send('Email already exists.');

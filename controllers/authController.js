@@ -6,11 +6,10 @@ const signToken = (id, role) => {
     return jwt.sign({id, role}, process.env.JWT_SECRET, {expiresIn: process.env.JWT_EXPIRES_IN});
 }
 
-// POST /signup
 const signUp = (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const role = 'user'; // default to non-admin
+  const role = 'user';
 
   if (!email || !password) {
     return res.status(400).send('Please provide email, and password.');
@@ -22,15 +21,10 @@ const signUp = (req, res) => {
       return res.status(500).send('Error hashing password.');
     }
 
-    // Insert
-    const query = `
-      INSERT INTO USER (EMAIL, ROLE, PASSWORD)
-      VALUES ('${email}', '${role}', '${hashedPassword}')
-    `;
+    const query = `INSERT INTO USER (EMAIL, ROLE, PASSWORD) VALUES (?, ?, ?)`;
 
-    db.run(query, (err) => {
+    db.run(query, [email, role, hashedPassword], function (err) {
       if (err) {
-        // Handle unique constraint violation
         if (err.message.includes('UNIQUE constraint')) {
           return res.status(400).send('Email already exists.');
         }
@@ -38,7 +32,6 @@ const signUp = (req, res) => {
         return res.status(500).send('Database error.');
       }
 
-      // Create token
       const token = signToken(this.lastID, role);
       return res.status(201).json({
         status: 'success',
@@ -57,9 +50,9 @@ const login = (req, res) => {
     return res.status(400).send('Please provide email and password.');
   }
 
-  const query = `SELECT * FROM USER WHERE EMAIL='${email}'`;
+  const query = `SELECT * FROM USER WHERE EMAIL = ?`;
 
-  db.get(query, (err, row) => {
+  db.get(query, [email], (err, row) => {
     if (err) {
       console.log(err);
       return res.status(500).send('Database error');
@@ -69,7 +62,6 @@ const login = (req, res) => {
       return res.status(401).send('Invalid credentials');
     }
 
-    // Compare the hashed password
     bcrypt.compare(password, row.PASSWORD, (err, isMatch) => {
       if (err) {
         console.error(err);
@@ -80,7 +72,6 @@ const login = (req, res) => {
         return res.status(401).send('Invalid credentials');
       }
 
-      // Generate JWT token for successful login
       const token = signToken(row.ID, row.ROLE);
 
       return res.status(200).json({
@@ -96,7 +87,6 @@ const login = (req, res) => {
   });
 };
 
-// --- VERIFY TOKEN MIDDLEWARE ---
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
@@ -124,6 +114,5 @@ const verifyAdmin = (req, res, next) => {
     next();
   });
 };
-
 
 module.exports = { signUp, login, verifyToken, verifyAdmin };
